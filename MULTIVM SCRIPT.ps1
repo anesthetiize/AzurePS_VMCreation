@@ -85,12 +85,14 @@ function chooseResourceGroup{
     $selection = Read-Host "Please make a selection and hit enter." 
     switch ($selection){
         '1'{
-            'Creating a new Resource Group.'
+            Write-Host ""
+            Write-Host '========== Info: Creating a new Resource Group. ==========' -ForegroundColor Black -BackgroundColor Yellow
+            Write-Host ""
             createNewRG
         } 
         '2'{
-            'Retrieving subscriptions. Please wait.'
-            ##TO-DO chooseExistingRG
+            Write-Host "Retrieving subscriptions. Please wait." -ForegroundColor Black -BackgroundColor Yellow
+            chooseExistingRG
         }
     }
  
@@ -143,7 +145,51 @@ function createNewRG{
     #ACTUAL CREATION LINE
     New-AzureRmResourceGroup -Name $resourceGroupName -Location $azureLocation
 
-    Write-Host "[" + $resourceGroupName + "] Resource Group Successfully Created"
+    Write-Host "[$resourceGroupName] Resource Group Successfully Created" -ForegroundColor Yellow
+
+}
+
+function chooseExistingRG{
+
+    $azureResourceGroups = Get-AzureRmResourceGroup | sort ResourceGroupName | Select ResourceGroupName
+
+    Write-Host "Info : The following Azure resource groups are available, please choose a number and type Enter:" -ForegroundColor Cyan
+
+    $j = $azureResourceGroups.Length
+    #OUTPUT AVALAIBLE RESOURCE GROUPS
+    $i=1
+    foreach ($azzz in $azureResourceGroups ){
+        write-host $i : $azureResourceGroups.Item($i - 1).ResourceGroupName # use dot-ResourceGroupName ".ResourceGroupName" cause it is a JSON object.
+        $i++
+    }
+
+    #CHOICE PROMPT
+    $SelectedNumber = 0
+    while ($SelectedNumber -notin 1..$j ) {
+
+        $SelectedNumber = Read-Host -Prompt "Type a number and hit Enter"
+
+        if ($SelectedNumber -notin 1..$j ) {            
+            Write-Host "Invalid choice, please select a number between "1 "and "$j -BackgroundColor Red -ForegroundColor Yellow 
+            $i=1
+            
+            foreach ($azzz in $azureResourceGroups ){
+                write-host $i : $azureResourceGroups[$i - 1].ResourceGroupName # use dot-ResourceGroupName ".ResourceGroupName" cause it is a JSON object.
+                $i++
+            }
+        }
+    }
+
+    #RESOURCE GROUP NAME AND CREATION
+
+    $global:resourceGroupName = $azureResourceGroups.Item($SelectedNumber - 1).ResourceGroupName
+
+    Write-Host ""
+    $Output = "Info : The resource group [" + $resourceGroupName + "] is now the default resource group"
+    Write-Host $Output -ForegroundColor Cyan
+    Write-Host ""
+
+    Write-Host "[$resourceGroupName] Resource Group Successfully Selected" -ForegroundColor Yellow
 
 }
 
