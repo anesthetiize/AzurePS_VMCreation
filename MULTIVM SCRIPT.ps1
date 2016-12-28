@@ -153,43 +153,59 @@ function chooseExistingRG{
 
     $azureResourceGroups = Get-AzureRmResourceGroup | sort ResourceGroupName | Select ResourceGroupName
 
-    Write-Host "Info : The following Azure resource groups are available, please choose a number and type Enter:" -ForegroundColor Cyan
 
-    $j = $azureResourceGroups.Length
-    #OUTPUT AVALAIBLE RESOURCE GROUPS
-    $i=1
-    foreach ($azzz in $azureResourceGroups ){
-        write-host $i : $azureResourceGroups.Item($i - 1).ResourceGroupName # use dot-ResourceGroupName ".ResourceGroupName" cause it is a JSON object.
-        $i++
+    if ($azureResourceGroups.Length -lt 1) {
+        $global:resourceGroupName = $azureResourceGroups.ResourceGroupName
+
+        Write-Host ""
+        $Output = "Info : The resource group [" + $resourceGroupName + "] is now the default resource group"
+        Write-Host $Output -ForegroundColor Cyan
+        Write-Host ""
+
+        Write-Host "[$resourceGroupName] Resource Group Successfully Selected" -ForegroundColor Yellow
+
     }
+    else{
 
-    #CHOICE PROMPT
-    $SelectedNumber = 0
-    while ($SelectedNumber -notin 1..$j ) {
+        Write-Host "Info : The following Azure resource groups are available, please choose a number and type Enter:" -ForegroundColor Cyan
 
-        $SelectedNumber = Read-Host -Prompt "Type a number and hit Enter"
+        $j = $azureResourceGroups.Length
+        #OUTPUT AVALAIBLE RESOURCE GROUPS
+        $i=1
+        foreach ($azzz in $azureResourceGroups ){
+            write-host $i : $azureResourceGroups.Item($i - 1).ResourceGroupName # use dot-ResourceGroupName ".ResourceGroupName" cause it is a JSON object.
+            $i++
+        }
 
-        if ($SelectedNumber -notin 1..$j ) {            
-            Write-Host "Invalid choice, please select a number between "1 "and "$j -BackgroundColor Red -ForegroundColor Yellow 
-            $i=1
+        #CHOICE PROMPT
+        $SelectedNumber = 0
+        while ($SelectedNumber -notin 1..$j ) {
+
+            $SelectedNumber = Read-Host -Prompt "Type a number and hit Enter"
+
+            if ($SelectedNumber -notin 1..$j ) {            
+                Write-Host "Invalid choice, please select a number between "1 "and "$j -BackgroundColor Red -ForegroundColor Yellow 
+                $i=1
             
-            foreach ($azzz in $azureResourceGroups ){
-                write-host $i : $azureResourceGroups[$i - 1].ResourceGroupName # use dot-ResourceGroupName ".ResourceGroupName" cause it is a JSON object.
-                $i++
+                foreach ($azzz in $azureResourceGroups ){
+                    write-host $i : $azureResourceGroups[$i - 1].ResourceGroupName # use dot-ResourceGroupName ".ResourceGroupName" cause it is a JSON object.
+                    $i++
+                }
             }
         }
+
+        #RESOURCE GROUP NAME AND CREATION
+
+        $global:resourceGroupName = $azureResourceGroups.Item($SelectedNumber - 1).ResourceGroupName
+
+        Write-Host ""
+        $Output = "Info : The resource group [" + $resourceGroupName + "] is now the default resource group"
+        Write-Host $Output -ForegroundColor Cyan
+        Write-Host ""
+
+        Write-Host "[$resourceGroupName] Resource Group Successfully Selected" -ForegroundColor Yellow
+
     }
-
-    #RESOURCE GROUP NAME AND CREATION
-
-    $global:resourceGroupName = $azureResourceGroups.Item($SelectedNumber - 1).ResourceGroupName
-
-    Write-Host ""
-    $Output = "Info : The resource group [" + $resourceGroupName + "] is now the default resource group"
-    Write-Host $Output -ForegroundColor Cyan
-    Write-Host ""
-
-    Write-Host "[$resourceGroupName] Resource Group Successfully Selected" -ForegroundColor Yellow
 
 }
 
