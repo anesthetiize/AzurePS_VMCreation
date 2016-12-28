@@ -1,6 +1,6 @@
 ﻿cls
 
-#LOGIN VERIFICATION
+#-------------------LOGIN VERIFICATION---------------------
 function logIn{
 
     Try{
@@ -12,12 +12,18 @@ function logIn{
 
 }
 
-#SUBSCRIPTION
+
+#----------------------SUBSCRIPTION------------------------
 function chooseSubscription{
 
     #GETTING SUBSCRIPTION INFORMATION
     $AzureSubscriptions = Get-AzureRmSubscription -TenantId $AzureAccount.Context.Tenant
     $AzureSubscriptionsNames = $AzureSubscriptions.SubscriptionName
+
+    $Title = 'Choose a Subscription'
+    Write-Host ""
+    Write-Host "================ $Title ================" -ForegroundColor Black -BackgroundColor White
+    Write-Host ""
 
     #IF THERE'S ONLY ONE SUBSCRIPTION
     if ($AzureSubscriptionsNames.GetType().FullName -eq 'System.String' ) {
@@ -69,16 +75,18 @@ function chooseSubscription{
 }
 
 
-#----------------RESOURCE GROUP STUFF----------------------
+#------------------RESOURCE GROUP STUFF--------------------
+
 #INITIAL PROMPT
 function chooseResourceGroup{
+    $global:azureLocation = "" #Resetting glob
  
     $Title = 'Choose existant Resource Group or create a new one?'
-    Clear-Host
-    Write-Host "================ $Title ================"
+    Write-Host ""
+    Write-Host "================ $Title ================" -ForegroundColor Black -BackgroundColor White
     
-    Write-Host "1: create a new one." -ForegroundColor Cyan
-    Write-Host "2: to choose existant." -ForegroundColor Cyan
+    Write-Host "1: create a new one." -ForegroundColor Green
+    Write-Host "2: to choose existant." -ForegroundColor Green
     Write-Host ""
 
 
@@ -91,7 +99,7 @@ function chooseResourceGroup{
             createNewRG
         } 
         '2'{
-            Write-Host "Retrieving subscriptions. Please wait." -ForegroundColor Black -BackgroundColor Yellow
+            Write-Host "Retrieving available subscriptions. Please wait." -ForegroundColor Black -BackgroundColor Yellow
             chooseExistingRG
         }
     }
@@ -103,7 +111,7 @@ function createNewRG{
 
     $azureLocations = Get-AzureRmLocation | sort Location | Select Location
 
-    Write-Host "Info : The following Azure subscriptions are available, please choose a number and type Enter:" -ForegroundColor Cyan
+    Write-Host "Info : The following Azure locations/regions are available:" -ForegroundColor Cyan
 
     $j = $azureLocations.Length
     #OUTPUT AVALAIBLE LOCATIONS
@@ -135,7 +143,7 @@ function createNewRG{
     $global:azureLocation = $azureLocations.Item($SelectedNumber - 1).Location
 
     Write-Host ""
-    $global:resourceGroupName = Read-Host -Prompt "Please enter a name for the resource group. **The name must be all lowercase.**"
+    $global:resourceGroupName = Read-Host -Prompt "Please enter a name for the resource group."
 
     $Output = "Info : The resource group [" + $resourceGroupName + "] will be created on the [" + $azureLocation+ "] Location."
     Write-Host $Output -ForegroundColor Cyan
@@ -149,6 +157,7 @@ function createNewRG{
 
 }
 
+#CHOOSE EXISTING RESOURCE GROUP
 function chooseExistingRG{
 
     $azureResourceGroups = Get-AzureRmResourceGroup | sort ResourceGroupName | Select ResourceGroupName
@@ -210,7 +219,206 @@ function chooseExistingRG{
 }
 
 
+#------------------STORAGE ACCOUNT STUFF-------------------
 
+#INITIAL PROMPT
+function chooseStorageAccount{
+    
+    $Title = 'Choose existant Storage Account or create a new one?'
+    Write-Host ""
+    Write-Host "================ $Title ================" -ForegroundColor Black -BackgroundColor White
+    
+    Write-Host "1: create a new one." -ForegroundColor Green
+    Write-Host "2: to choose existant." -ForegroundColor Green
+    Write-Host ""
+
+
+    $selection = Read-Host "Please make a selection and hit enter." 
+    switch ($selection){
+
+        '1'{
+            Write-Host ""
+            Write-Host '========== Info: Creating a new Storage Account. ==========' -ForegroundColor Black -BackgroundColor Yellow
+            Write-Host ""
+            createNewSA
+        } 
+        '2'{
+            Write-Host "Retrieving avalaible Storage Accounts. Please wait." -ForegroundColor Black -BackgroundColor Yellow
+            chooseExistingSA
+        }
+    }
+ 
+}
+
+#SKU NAME CHOOSING
+function chooseSkuName{
+
+    Write-Host ""
+    Write-Host "Please choose a Sku" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "The following Sku's are available:" -ForegroundColor Cyan
+    Write-Host "1: Standard_LRS" -ForegroundColor Green
+    Write-Host "2: Standard_GRS" -ForegroundColor Green
+    Write-Host "3: Standard_RAGRS" -ForegroundColor Green
+    Write-Host "4: Standard_ZRS" -ForegroundColor Green
+    Write-Host "5: Premium_LRS" -ForegroundColor Green
+    $selection = Read-Host "Please type a number and hit Enter " 
+
+    switch($selection){
+    
+        '1'{
+            $global:skuName = "Standard_LRS"
+            Write-Host "[Standard_LRS] Selected." -ForegroundColor Cyan
+        }
+        '2'{
+            $global:skuName = "Standard_GRS"
+            Write-Host "[Standard_GRS] Selected." -ForegroundColor Cyan
+        }
+        '3'{
+            $global:skuName = "Standard_RAGRS"
+            Write-Host "[Standard_RAGRS] Selected." -ForegroundColor Cyan
+        }
+        '4'{
+            $global:skuName = "Standard_ZRS"
+            Write-Host "[Standard_ZRS] Selected." -ForegroundColor Cyan
+        }
+        '5'{
+            $global:skuName = "Premium_LRS"
+            Write-Host "[Premium_LRS] Selected." -ForegroundColor Cyan
+        }
+    
+    }
+    #TO-DO: Handle when $selected isnt in range.
+
+}
+
+#STORAGE KIND CHOOSING
+function chooseStorageKind{
+    
+    Write-Host ""
+    Write-Host "Please choose a Storage Kind" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "The following Storage kinds are available:" -ForegroundColor Cyan
+    Write-Host "1: Storage" -ForegroundColor Green
+    Write-Host "2: BlobStorage" -ForegroundColor Green
+    $selection = Read-Host "Please type a number and hit Enter: " 
+
+    switch($selection){
+    
+        '1'{
+            $global:storageKind = "Storage"
+            Write-Host "[Storage] Selected." -ForegroundColor Cyan
+        }
+        '2'{ 
+            $global:storageKind = "BlobStorage" 
+            Write-Host "[BlobStorage] Selected." -ForegroundColor Cyan
+        }
+    }
+    
+
+}
+
+#CREATE NEW STORAGE ACCOUNT
+function createNewSA{
+
+    Write-Host "Info: Creating a new Storage Account in the current [$resourceGroupName] resource Group" -ForegroundColor Cyan
+    Write-Host ""
+    $global:storageAccountName = Read-Host "Please enter a name for the new Storage Account **Must be all lower case**: " 
+    #CHECK IF NAME IS AVAILABLE
+    try{
+        Get-AzureRmStorageAccountNameAvailability $storageAccountName
+    }
+    catch{
+        Write-Host "The storage account name provided is already in use, please try again with a different name." -ForegroundColor Black -BackgroundColor Yellow
+        createNewSA
+    }
+    #CHOOSE OTHER CONFIGURATION REQUIREMENTS
+    chooseSkuName
+    chooseStorageKind
+    
+    #ASIGN LOCATION DEPENDING ON THE CURRENT WORKING RESOURCE GROUP (made just in case the user chooses to use an existing RG)
+    $locationData = Get-AzureRmResourceGroup -Name $resourceGroupName | Sort Location | Select Location
+    $storageAccountLocation = $locationData.Location
+    
+    
+    Write-Host "Info: Creating the new [$storageAccountName] Storage Account." -ForegroundColor Black -BackgroundColor Yellow
+    Write-Host "Sku: [$skuName]" -ForegroundColor Black -BackgroundColor Yellow
+    Write-Host "Storage Kind: [$storageKind]" -ForegroundColor Black -BackgroundColor Yellow
+    Write-Host "Location: [$storageAccountLocation]" -ForegroundColor Black -BackgroundColor Yellow
+    Write-Host ""
+    Write-Host "Please wait." -ForegroundColor Black -BackgroundColor Yellow
+
+    #ACTUAL CREATION OF THE STORAGE ACCOUNT
+    $global:storageAccount = New-AzureRmStorageAccount -ResourceGroupName $resourceGroupName `
+    -Name $storageAccountName -SkuName $skuName -Kind $storageKind -Location $storageAccountLocation
+
+    Write-Host "Storage Account Successfully created." -ForegroundColor Black -BackgroundColor Yellow
+
+}
+
+#SELECT EXISTING STORAGE ACCOUNT
+function chooseExistingSA{
+
+    $azureStorageAccounts = Get-AzureRmStorageAccount| sort StorageAccountName | Select StorageAccountName
+
+
+    if ($azureStorageAccounts.Length -lt 1) {
+        $global:storageAccountName = $azureStorageAccounts.StorageAccountName
+
+        Write-Host ""
+        $Output = "Info : The Storage Account [" + $storageAccountName + "] is now the default Storage Account"
+        Write-Host $Output -ForegroundColor Cyan
+        Write-Host ""
+
+        Write-Host "[$storageAccountName] Storage Account Successfully Selected" -ForegroundColor Yellow
+
+    }
+    else{
+
+        Write-Host "Info : The following Azure storage accounts are available:" -ForegroundColor Cyan
+
+        $j = $azureStorageAccounts.Length
+        #OUTPUT AVALAIBLE RESOURCE GROUPS
+        $i=1
+        foreach ($azzz in $azureStorageAccounts ){
+            write-host $i : $azureStorageAccounts.Item($i - 1).StorageAccountName # use dot-StorageAccountName  cause it is a JSON object.
+            $i++
+        }
+
+        #CHOICE PROMPT
+        $SelectedNumber = 0
+        while ($SelectedNumber -notin 1..$j ) {
+
+            $SelectedNumber = Read-Host -Prompt "Type a number and hit Enter"
+
+            if ($SelectedNumber -notin 1..$j ) {            
+                Write-Host "Invalid choice, please select a number between "1 "and "$j -BackgroundColor Red -ForegroundColor Yellow 
+                $i=1
+            
+                foreach ($azzz in $azureStorageAccounts ){
+                    write-host $i : $azureStorageAccounts[$i - 1].StorageAccountName
+                    $i++
+                }
+            }
+        }
+
+        #RESOURCE GROUP NAME AND CREATION
+
+        $global:storageAccountName = $azureStorageAccounts.Item($SelectedNumber - 1).StorageAccountName
+
+        Write-Host ""
+        $Output = "Info : The Storage Account [" + $storageAccountName + "] is now the default StorageAccount"
+        Write-Host $Output -ForegroundColor Cyan
+        Write-Host ""
+
+        $global:storageAccount = Get-AzureRmStorageAccount -name $storageAccountName -ResourceGroupName $resourceGroupName
+
+        Write-Host "[$storageAccountName] Storage Account Successfully Selected" -ForegroundColor Yellow
+
+    }
+
+}
+    
 
 
 
@@ -220,6 +428,7 @@ function main{
     logIn
     chooseSubscription
     chooseResourceGroup
+    chooseStorageAccount
 
 }
 
