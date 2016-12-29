@@ -1,4 +1,11 @@
-﻿cls
+﻿<# 
+.NOTES
+  Version:        1.0 alpha
+  Author:         Bryan Hernandez
+  Creation Date:  Dec 28th, 2016.
+#>
+
+cls
 
 #-------------------LOGIN VERIFICATION---------------------
 function logIn{
@@ -81,12 +88,12 @@ function chooseSubscription{
 function chooseResourceGroup{
     $global:azureLocation = "" #Resetting glob
  
-    $Title = 'Choose existant Resource Group or create a new one?'
+    $Title = 'Choose existent Resource Group or create a new one?'
     Write-Host ""
     Write-Host "================ $Title ================" -ForegroundColor Black -BackgroundColor White
     
     Write-Host "1: create a new one." -ForegroundColor Green
-    Write-Host "2: to choose existant." -ForegroundColor Green
+    Write-Host "2: to choose existent." -ForegroundColor Green
     Write-Host ""
 
 
@@ -224,12 +231,12 @@ function chooseExistingRG{
 #INITIAL PROMPT
 function chooseStorageAccount{
     
-    $Title = 'Choose existant Storage Account or create a new one?'
+    $Title = 'Choose existent Storage Account or create a new one?'
     Write-Host ""
     Write-Host "================ $Title ================" -ForegroundColor Black -BackgroundColor White
     
     Write-Host "1: create a new one." -ForegroundColor Green
-    Write-Host "2: to choose existant." -ForegroundColor Green
+    Write-Host "2: to choose existent." -ForegroundColor Green
     Write-Host ""
 
 
@@ -389,6 +396,7 @@ function chooseExistingSA{
         $SelectedNumber = 0
         while ($SelectedNumber -notin 1..$j ) {
 
+            Write-Host ""
             $SelectedNumber = Read-Host -Prompt "Type a number and hit Enter"
 
             if ($SelectedNumber -notin 1..$j ) {            
@@ -407,7 +415,7 @@ function chooseExistingSA{
         $global:storageAccountName = $azureStorageAccounts.Item($SelectedNumber - 1).StorageAccountName
 
         Write-Host ""
-        $Output = "Info : The Storage Account [" + $storageAccountName + "] is now the default StorageAccount"
+        $Output = "Info : The Storage Account [" + $storageAccountName + "] is now the default Storage Account"
         Write-Host $Output -ForegroundColor Cyan
         Write-Host ""
 
@@ -420,6 +428,128 @@ function chooseExistingSA{
 }
     
 
+#------------------VIRTUAL NETWORK STUFF-------------------
+
+#INITIAL PROMPT
+function chooseVirtualNetwork{
+
+    $Title = 'Choose existent Virtual Network or create a new one?'
+    Write-Host ""
+    Write-Host "================ $Title ================" -ForegroundColor Black -BackgroundColor White
+    
+    Write-Host "1: create a new one." -ForegroundColor Green
+    Write-Host "2: to choose existent." -ForegroundColor Green
+    Write-Host ""
+
+    $selection = Read-Host "Please make a selection and hit enter." 
+    switch ($selection){
+
+        '1'{
+            Write-Host ""
+            Write-Host '========== Info: Creating a new Virtual Network. ==========' -ForegroundColor Black -BackgroundColor Yellow
+            Write-Host ""
+            createNewVN
+        } 
+        '2'{
+            Write-Host "Retrieving avalaible Virtual Networks. Please wait." -ForegroundColor Black -BackgroundColor Yellow
+            chooseExistingVN
+        }
+    }
+
+}
+
+#CREATE NEW VIRTUAL NETWORK
+function createNewVN{
+
+    Write-Host "Info: Creating a new Virtual Network in the current [$resourceGroupName] resource Group" -ForegroundColor Cyan
+    Write-Host ""
+    $global:virtualNetworkName = Read-Host "Please enter a name for the new Virtual Network "
+    Write-Host ""
+    $virtualNetworkAddress = Read-Host "Please enter an Adress Prefix for the [$virtualNetworkName] Virtual Network. (Example: 10.0.0.0/16) "
+    Write-Host ""
+    $global:subnetName = Read-Host "Please enter a name for the Virtual Network Subnet "
+    Write-Host ""
+    $subnetAddress = Read-Host "Please enter an Address Prefix for the [$subnetName] subnet. (Example: 10.0.0.0/24)"
+
+    #ASIGN LOCATION DEPENDING ON THE CURRENT WORKING RESOURCE GROUP (made just in case the user chooses to use an existing RG)
+    $locationData = Get-AzureRmResourceGroup -Name $resourceGroupName | Sort Location | Select Location
+    $virtualNetworkLocation = $locationData.Location
+
+    Write-Host ""
+    Write-Host "Creating the [$virtualNetworkName] Virtual Network on the [$resourceGroupName] Resource Group. Please wait." -ForegroundColor Yellow
+
+    $subnet = New-AzureRmVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddress
+    $virtualNetwork = New-AzureRmVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName `
+     -Location $virtualNetworkLocation -AddressPrefix $virtualNetworkAddress -Subnet $subnet
+
+     Write-Host ""
+     Write-Host "The [$virtualNetworkName] Virtual Network was successfully created." -ForegroundColor Black -BackgroundColor Yellow
+
+}
+
+#CHOOSING EXISTENT VIRTUAL NETWORK
+function chooseExistingVN{
+
+    $azureVirtualNetworks = Get-AzureRmVirtualNetwork | Sort Name | Select Name
+
+
+    if ($azureVirtualNetworks.Length -lt 1) {
+        $global:virtualNetworkName = $azureVirtualNetworks.Name
+
+        Write-Host ""
+        $Output = "Info : The Virtual Network [" + $virtualNetworkName + "] is now the default Virtual Network"
+        Write-Host $Output -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "[$virtualNetworkName] Virtual Network Successfully Selected" -ForegroundColor Yellow
+
+    }
+    else{
+
+        Write-Host "Info : The following Azure virtual networks are available:" -ForegroundColor Cyan
+
+        $j = $azureVirtualNetworks.Length
+        #OUTPUT AVALAIBLE RESOURCE GROUPS
+        $i=1
+        foreach ($azzz in $azureVirtualNetworks ){
+            write-host $i : $azureVirtualNetworks.Item($i - 1).Name
+            $i++
+        }
+
+        #CHOICE PROMPT
+        $SelectedNumber = 0
+        while ($SelectedNumber -notin 1..$j ) {
+
+            Write-Host ""
+            $SelectedNumber = Read-Host -Prompt "Type a number and hit Enter"
+
+            if ($SelectedNumber -notin 1..$j ) {            
+                Write-Host "Invalid choice, please select a number between "1 "and "$j -BackgroundColor Red -ForegroundColor Yellow 
+                $i=1
+            
+                foreach ($azzz in $azureVirtualNetworks ){
+                    write-host $i : $azureVirtualNetworks[$i - 1].Name
+                    $i++
+                }
+            }
+        }
+
+        #RESOURCE GROUP NAME AND CREATION
+
+        $global:virtualNetworkName = $azureVirtualNetworks.Item($SelectedNumber - 1).Name
+
+        Write-Host ""
+        $Output = "Info : The Virtual Network [" + $virtualNetworkName + "] is now the default Virtual Network"
+        Write-Host $Output -ForegroundColor Cyan
+        Write-Host ""
+
+        $global:virtualNetwork = Get-AzureRmVirtualNetwork -name $virtualNetworkName -ResourceGroupName $resourceGroupName
+
+        Write-Host "[$virtualNetworkName] Virtual Network Successfully Selected" -ForegroundColor Yellow
+    }
+
+}
+
+
 
 
 #RUNNABLE.
@@ -429,6 +559,7 @@ function main{
     chooseSubscription
     chooseResourceGroup
     chooseStorageAccount
+    chooseVirtualNetwork
 
 }
 
