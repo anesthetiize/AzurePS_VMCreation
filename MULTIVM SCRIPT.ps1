@@ -1,6 +1,6 @@
 ﻿<# 
 .NOTES
-  Version:        1.0 alpha
+  Version:        0.1 beta
   Author:         Bryan Hernandez
   Creation Date:  Dec 28th, 2016.
 #>
@@ -559,7 +559,7 @@ function VMCreation{
     $dummyPrompt = Read-Host "Please enter the credentials for the actual VM(s) login. HIT ENTER TO CONTINUE"
     $global:VmCredentials = Get-Credential -Message "Please enter the login credentials for the VM(s)"
 
-    ################QUEMADO. BRINDAR OPCION DE ELEGIR EN FUTURAS VERSIONES#############################
+    ################    [BURNED]. GIVE OPTION TO CHANGE THIS IN FUTURE VERSIONS#############################
     $VMSize = "Standard_A0"
 
     #ASIGN LOCATION DEPENDING ON THE CURRENT WORKING RESOURCE GROUP (made just in case the user chooses to use an existing RG)
@@ -573,7 +573,7 @@ function VMCreation{
     $i = 1;
 
     Do { 
-        $i; 
+        Write-Host "CREATING THE [ $i ] VIRTUAL MACHINE" -ForegroundColor Black -BackgroundColor Yellow 
         $vmName=$nameOfVM+$i
         $vmconfig=New-AzureRmVMConfig -VMName $vmName -VMSize $VMSize
 
@@ -585,7 +585,11 @@ function VMCreation{
         # Storage
         $VMStorageAccount = Get-AzureRmStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName
         ## Setup local VM object
+
+        #############   [BURNED] TO-DO: GIVE THE USER THE ABILITY TO CHOOSE THE OS IN FUTURE VERSIONS###############################
         $vm = Set-AzureRmVMSourceImage -VM $vm -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2012-R2-Datacenter -Version "latest"
+        
+        
         $PIp = New-AzureRmPublicIpAddress -Name $InterfaceName$i -ResourceGroupName $resourceGroupName -Location $VMLocation -AllocationMethod Dynamic
         $Interface = New-AzureRmNetworkInterface -Name $interfaceName$i -ResourceGroupName $resourceGroupName -Location $VMLocation -SubnetId $virtualNetwork.Subnets[0].Id -PublicIpAddressId $PIp.Id
         $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $vm -Id $Interface.Id
