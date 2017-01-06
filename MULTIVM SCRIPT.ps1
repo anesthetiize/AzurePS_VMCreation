@@ -479,7 +479,7 @@ function createNewVN{
     Write-Host "Creating the [$virtualNetworkName] Virtual Network on the [$resourceGroupName] Resource Group. Please wait." -ForegroundColor Yellow
 
     $subnet = New-AzureRmVirtualNetworkSubnetConfig -Name $subnetName -AddressPrefix $subnetAddress
-    $virtualNetwork = New-AzureRmVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName `
+    $global:virtualNetwork = New-AzureRmVirtualNetwork -Name $virtualNetworkName -ResourceGroupName $resourceGroupName `
      -Location $virtualNetworkLocation -AddressPrefix $virtualNetworkAddress -Subnet $subnet
 
      Write-Host ""
@@ -549,6 +549,57 @@ function chooseExistingVN{
 
 }
 
+#--------------VIRTUAL MACHINES CREATION-------------------
+
+function VMCreation{
+    
+    $global:nameOfVM = Read-Host "Please enter a name for the VM(s)"
+    $global:numberOfVM = Read-Host "Please enter how many Virtual Machines you want to create and hit enter"
+    $global:interfaceName = Read-Host "Please enter a name for the network interface of the new VM(s)"
+    $dummyPrompt = Read-Host "Please enter the credentials for the actual VM(s) login. HIT ENTER TO CONTINUE"
+    $global:VmCredentials = Get-Credential -Message "Please enter the login credentials for the VM(s)"
+
+    ################QUEMADO. BRINDAR OPCION DE ELEGIR EN FUTURAS VERSIONES#############################
+    $VMSize = "Standard_A0"
+
+    #ASIGN LOCATION DEPENDING ON THE CURRENT WORKING RESOURCE GROUP (made just in case the user chooses to use an existing RG)
+    $locationData = Get-AzureRmResourceGroup -Name $resourceGroupName | Sort Location | Select Location
+    $VMLocation = $locationData.Location
+
+    Write-Host ""
+    Write-Host "CREATING [$numberOfVM] Virtual Machine(s), PLEASE WAIT WHILE THE SCRIPT CREATES THE MACHINES..." -ForegroundColor Black -BackgroundColor Yellow
+
+
+    $i = 1;
+
+    Do { 
+        $i; 
+        $vmName=$nameOfVM+$i
+        $vmconfig=New-AzureRmVMConfig -VMName $vmName -VMSize $VMSize
+
+        $vm=Set-AzureRmVMOperatingSystem -VM $vmconfig -Windows -ComputerName $vmName -Credential $VmCredentials -ProvisionVMAgent -EnableAutoUpdate
+
+        $VMVnet = Get-AzureRmVirtualNetwork -name $virtualNetworkName -ResourceGroupName $resourceGroupName
+
+        $OSDiskName = $vmName + "osDisk"
+        # Storage
+        $VMStorageAccount = Get-AzureRmStorageAccount -Name $storageAccountName -ResourceGroupName $resourceGroupName
+        ## Setup local VM object
+        $vm = Set-AzureRmVMSourceImage -VM $vm -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2012-R2-Datacenter -Version "latest"
+        $PIp = New-AzureRmPublicIpAddress -Name $InterfaceName$i -ResourceGroupName $resourceGroupName -Location $VMLocation -AllocationMethod Dynamic
+        $Interface = New-AzureRmNetworkInterface -Name $interfaceName$i -ResourceGroupName $resourceGroupName -Location $VMLocation -SubnetId $virtualNetwork.Subnets[0].Id -PublicIpAddressId $PIp.Id
+        $VirtualMachine = Add-AzureRmVMNetworkInterface -VM $vm -Id $Interface.Id
+        $OSDiskUri = $VMStorageAccount.PrimaryEndpoints.Blob.ToString() + "vhds/" + $OSDiskName + ".vhd"
+        $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -Name $OSDiskName -VhdUri $OSDiskUri -CreateOption FromImage
+
+        ## Create the VM in Azure
+        New-AzureRmVM -ResourceGroupName $resourceGroupName -Location $VMLocation -VM $VirtualMachine
+        $i +=1
+    } 
+    Until ($i -gt $NumberOfVM) 
+
+}
+
 
 
 
@@ -560,6 +611,7 @@ function main{
     chooseResourceGroup
     chooseStorageAccount
     chooseVirtualNetwork
+    VMCreation
 
 }
 
